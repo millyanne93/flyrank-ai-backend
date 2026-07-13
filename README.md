@@ -6,12 +6,12 @@ This repository contains all my backend engineering assignments for the FlyRank 
 
 | Task | Description | Tech Stack |
 |------|-------------|------------|
-| [Task 1](./task-1-simple-api/) | Two JSON endpoints | Next.js + TypeScript |
+| [Task 1](./task-1-simple-api/) | Two JSON endpoints | Express + TypeScript |
 
 ##  Tech Stack
 
 - TypeScript
-- Next.js
+- Express
 - Node.js
 
 ---
