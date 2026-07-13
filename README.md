@@ -2,13 +2,13 @@
 
 This repository contains all my backend engineering assignments for the FlyRank AI internship program.
 
-## 📂 Tasks
+##  Tasks
 
 | Task | Description | Tech Stack |
 |------|-------------|------------|
 | [Task 1](./task-1-simple-api/) | Two JSON endpoints | Next.js + TypeScript |
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 - TypeScript
 - Next.js
