@@ -66,30 +66,6 @@ Both endpoints return JSON:
   "status": "ok",
   "message": "pong"
 }
-```
-
-## Project Structure
-task-1-simple-api/
-├── app/
-│   └── api/
-│       ├── route.ts           # GET /api endpoint
-│       └── ping/
-│           └── route.ts       # GET /api/ping endpoint
-├── package.json
-├── tsconfig.json
-└── README.md
-
-## What I Built
-
-✅ Two working JSON endpoints  
-✅ Callable from `curl` and browser  
-✅ TypeScript for type safety  
-✅ Published to GitHub  
-
-## Key Concepts Practiced
-
-- Understanding the HTTP request-response cycle
-- Creating API routes with Next.js App Router
-- Returning JSON responses with `NextResponse`
+```  
 - Testing endpoints with curl and browser
 - Version control with Git/GitHub
