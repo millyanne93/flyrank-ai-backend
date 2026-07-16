@@ -3,6 +3,14 @@ import express, { Request, Response } from 'express';
 const app = express();
 const PORT = 3000;
 
+//in-memory task list
+let tasks: { id: number; title: string; done: boolean }[] =[
+  { id: 1, title: 'Learn Typescript', done: false },
+  { id: 2, title: 'Build CRUD API', done: false },
+  { id: 3, title: 'Submt assignment', done: false },
+];
+
+let nextId = 4;
 
 app.get('/hello', (req: Request, res: Response): void => {
   res.json({ message: 'Hello world!'});
@@ -15,9 +23,27 @@ app.get('/', (req: Request, res: Response): void => {
     endpoints: ['/tasks']
   });
 });
-app.get('/health', (req: Request, res: Response):void => {
+app.get('/health', (req: Request, res: Response): void => {
   res.json({ status: 'ok' });
 });
+
+// get task list
+app.get('/tasks', (req: Request, res: Response) => {
+  res.json(tasks);
+});
+
+//get /task/:id
+app.get('/tasks/:id', (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  const task = tasks.find(t => t.id === id);
+  
+  if (!task) {
+    return res.status(404).json({ error: `Task ${id} not found` });
+  }
+
+  res.json(task);
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
