@@ -1,9 +1,18 @@
 import express, { Request, Response } from 'express';
+import swaggerUi from 'swagger-ui-express';
+import openapi from './openapi.json';
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+app.use('/docs', swaggerUi.serve,swaggerUi.setup(openapi));
+
+interface Task {
+  id: number;
+  title: string;
+  done: boolean;
+}  
 
 //in-memory task list
 let tasks: { id: number; title: string; done: boolean }[] =[
@@ -104,6 +113,27 @@ app.delete( '/tasks/:id', (req: Request, res: Response) => {
   res.status(204).send();
 });
 
+// GET /stats - task statistics 
+app.get('/stats', (req: Request, res: Response) => {
+  const total = tasks.length;
+  const done = tasks.filter((t) => t.done).length;
+  const open = total - done;
+
+  res.join({ total, done, open});
+});
+
+//POST /reset- reset to default tasks
+app.post('/reset', (req: Request, res: Response) => {
+  tasks = [
+      { id: 1, title: 'Learn Typescript', done: false },
+      { id: 2, title: 'Build CRUD API', done: false },
+      { id: 3, title: 'Submt assignment', done: false },
+  ];
+  nextId = 4;
+  res.status(200).json({ message: 'Tasks reset to default', tasks})
+});  
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Swagger UI: http://localhost:${PORT}/docs`);
 });
