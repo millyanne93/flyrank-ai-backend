@@ -3,6 +3,8 @@ import express, { Request, Response } from 'express';
 const app = express();
 const PORT = 3000;
 
+app.use(express.json());
+
 //in-memory task list
 let tasks: { id: number; title: string; done: boolean }[] =[
   { id: 1, title: 'Learn Typescript', done: false },
@@ -42,6 +44,22 @@ app.get('/tasks/:id', (req: Request, res: Response) => {
   }
 
   res.json(task);
+});
+//Post /task  create task
+app.post('/tasks', (req: Request, res: Response,) => {
+  const { title } = req.body;
+
+  if (!title || title.trim() === '') {
+    return res.status(400).json({ error: 'Title is required and cannot be empty'});
+  }
+
+  const newTask = {
+    id: nextId++,
+    title: title.trim(),
+    done: false
+  };
+  tasks.push(newTask);
+  res.status(201).json(newTask);
 });
 
 
