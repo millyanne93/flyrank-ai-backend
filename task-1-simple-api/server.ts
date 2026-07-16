@@ -46,7 +46,7 @@ app.get('/tasks/:id', (req: Request, res: Response) => {
   res.json(task);
 });
 //Post /task  create task
-app.post('/tasks', (req: Request, res: Response,) => {
+app.post('/tasks', (req: Request, res: Response) => {
   const { title } = req.body;
 
   if (!title || title.trim() === '') {
@@ -62,6 +62,47 @@ app.post('/tasks', (req: Request, res: Response,) => {
   res.status(201).json(newTask);
 });
 
+//PUT /tasks/:id - update a task
+app.put('/tasks/:id', (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  const task = tasks.find(t => t.id === id);
+
+  if (!task) {
+    return res.status(404).json({ error: `Task ${id} not found` });
+  }
+  const { title, done } = req.body;
+
+  if (title === undefined && done === undefined) {
+    return res.status(400).json({ error: 'At least one field(title or done) is required' });
+  }
+
+  if (title !== undefined) {
+    if (title.trim() === '') {
+      return res.status(400).json({ error:'Title cannot be empty' });
+    }
+    task.title = title.trim();
+  }
+    
+  if (done !== undefined) {
+    if (typeof done !== 'boolean') {
+      return res.status(400).json({ error: 'Done must be a boolean'});
+    }
+    task.done = done;
+  }
+  res.json(task);
+});
+
+// DELETE /tasks/:id 
+app.delete( '/tasks/:id', (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  const index = tasks.findIndex(t => t.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ error: `Task ${id} not found` });
+  }
+  tasks.splice(index, 1);
+  res.status(204).send();
+});
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
