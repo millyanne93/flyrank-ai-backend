@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import openapi from './openapi.json';
-import {getAllTasks, getTaskById, createTask } from './database';
+import {getAllTasks, getTaskById, createTask, updateTask, deleteTask } from './database';
 
 const app = express();
 const PORT = 3000;
@@ -57,7 +57,7 @@ app.post('/tasks', (req: Request, res: Response) => {
 //PUT /tasks/:id - update a task
 app.put('/tasks/:id', (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
-  const task = tasks.find(t => t.id === id);
+  const task = getTaskById(id);
 
   if (!task) {
     return res.status(404).json({ error: `Task ${id} not found` });
@@ -72,27 +72,28 @@ app.put('/tasks/:id', (req: Request, res: Response) => {
     if (title.trim() === '') {
       return res.status(400).json({ error:'Title cannot be empty' });
     }
-    task.title = title.trim();
   }
     
   if (done !== undefined) {
     if (typeof done !== 'boolean') {
       return res.status(400).json({ error: 'Done must be a boolean'});
     }
-    task.done = done;
   }
-  res.json(task);
+  const updated = updateTask(id, title !== undefined ? title.trim() : undefined, done);
+
+  res.json(updated);
 });
 
 // DELETE /tasks/:id 
 app.delete( '/tasks/:id', (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
-  const index = tasks.findIndex(t => t.id === id);
 
-  if (index === -1) {
+  const deleted = deleteTask(id);
+
+  if (!deleted) {
     return res.status(404).json({ error: `Task ${id} not found` });
   }
-  tasks.splice(index, 1);
+  
   res.status(204).send();
 });
 

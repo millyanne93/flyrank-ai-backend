@@ -36,6 +36,25 @@ export function createTask(title: string) {
   const insert = db.prepare('INSERT INTO tasks (title, done) VALUES (?, ?)');
   const result = insert.run(title, 0);
   return getTaskById(result.lastInsertRowid as number);
+}
+
+export function updateTask(id: number, title?: string, done?: boolean) {
+  const existing = getTaskById(id) as any;
+  if (!existing) return null;
+
+  const newTitle = title !== undefined ? title : existing.title;
+  const newDone = done !== undefined ? (done ? 1 : 0) : existing.done;
+  
+  db.prepare('UPDATE tasks SET title = ?, done = ? WHERE id = ?').run(newTitle, newDone, id);
+  return getTaskById(id);
+}  
+
+export function deleteTask(id: number) {
+  const existing = getTaskById(id);
+  if (!existing) return false;
+  
+  db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+  return true;
 }  
 
 export default db;
