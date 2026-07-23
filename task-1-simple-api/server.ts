@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import openapi from './openapi.json';
+import './database';
 
 const app = express();
 const PORT = 3000;
