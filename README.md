@@ -7,6 +7,7 @@ This repository contains all my backend engineering assignments for the FlyRank 
 | Task | Description | Tech Stack |
 |------|-------------|------------|
 | [Task 1](./task-1-simple-api/) | Build your first CRUD API| Express + TypeScript |
+| [Task 22](./task-2-simple-api/) | Connecting your CRUD to the database| Express + TypeScript |
 
 ##  Tech Stack
 
