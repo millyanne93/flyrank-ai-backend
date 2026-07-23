@@ -29,8 +29,14 @@ export function getAllTasks() {
 
 // Get task by Id
 export function getTaskById(id:number) {
-  const stmt = db.prepare('SELECT * FROM tasks WHERE id - ?');
+  const stmt = db.prepare('SELECT * FROM tasks WHERE id = ?');
   return stmt.get(id);
 }  
+export function createTask(title: string) {
+  const insert = db.prepare('INSERT INTO tasks (title, done) VALUES (?, ?)');
+  const result = insert.run(title, 0);
+  return getTaskById(result.lastInsertRowid as number);
+}  
+
 export default db;
 

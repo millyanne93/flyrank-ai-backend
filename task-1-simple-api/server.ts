@@ -1,8 +1,7 @@
 import express, { Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import openapi from './openapi.json';
-import './database';
-import {getAllTasks, getTaskById } from './database';
+import {getAllTasks, getTaskById, createTask } from './database';
 
 const app = express();
 const PORT = 3000;
@@ -50,12 +49,8 @@ app.post('/tasks', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Title is required and cannot be empty'});
   }
 
-  const newTask = {
-    id: nextId++,
-    title: title.trim(),
-    done: false
-  };
-  tasks.push(newTask);
+  const newTask = createTask(title.trim());
+
   res.status(201).json(newTask);
 });
 
