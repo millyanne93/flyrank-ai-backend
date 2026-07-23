@@ -125,6 +125,7 @@ sqlite3 tasks.db "SELECT * FROM tasks WHERE done = 1;"
 
 **Database viewer screenshot:**
 
+<img width="1366" height="728" alt="2026-07-23" src="https://github.com/user-attachments/assets/1fdd6567-d0d0-4842-9745-5128a57a585e" />
 
 ---
 
