@@ -19,5 +19,18 @@ if (row.count === 0) {
   insert.run('Submit assignment', 0);
 }
 
+console.log('Database ready');
+
+//Stage 1 Get all tasks
+export function getAllTasks() {
+  const stmt = db.prepare('SELECT * FROM tasks ORDER BY id');
+  return stmt.all();
+}
+
+// Get task by Id
+export function getTaskById(id:number) {
+  const stmt = db.prepare('SELECT * FROM tasks WHERE id - ?');
+  return stmt.get(id);
+}  
 export default db;
 

@@ -2,27 +2,13 @@ import express, { Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import openapi from './openapi.json';
 import './database';
+import {getAllTasks, getTaskById } from './database';
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
 app.use('/docs', swaggerUi.serve,swaggerUi.setup(openapi));
-
-interface Task {
-  id: number;
-  title: string;
-  done: boolean;
-}  
-
-//in-memory task list
-let tasks: { id: number; title: string; done: boolean }[] =[
-  { id: 1, title: 'Learn Typescript', done: false },
-  { id: 2, title: 'Build CRUD API', done: false },
-  { id: 3, title: 'Submt assignment', done: false },
-];
-
-let nextId = 4;
 
 app.get('/hello', (req: Request, res: Response): void => {
   res.json({ message: 'Hello world!'});
@@ -41,13 +27,14 @@ app.get('/health', (req: Request, res: Response): void => {
 
 // get task list
 app.get('/tasks', (req: Request, res: Response) => {
+  const tasks = getAllTasks();
   res.json(tasks);
 });
 
 //get /task/:id
 app.get('/tasks/:id', (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
-  const task = tasks.find(t => t.id === id);
+  const task = getTaskById(id);
   
   if (!task) {
     return res.status(404).json({ error: `Task ${id} not found` });
@@ -120,7 +107,7 @@ app.get('/stats', (req: Request, res: Response) => {
   const done = tasks.filter((t) => t.done).length;
   const open = total - done;
 
-  res.join({ total, done, open});
+  res.json({ total, done, open});
 });
 
 //POST /reset- reset to default tasks
