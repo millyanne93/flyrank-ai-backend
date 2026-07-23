@@ -1,7 +1,18 @@
 import express, { Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import openapi from './openapi.json';
-import {getAllTasks, getTaskById, createTask, updateTask, deleteTask } from './database';
+import {
+  getAllTasks,
+  getTaskById,
+  createTask,
+  updateTask,
+  deleteTask,
+  resetTasks,
+  searchTasks,
+  getTasksByDone,
+  getTasksSortedByTitle,
+  getStats
+} from './database';
 
 const app = express();
 const PORT = 3000;
@@ -26,7 +37,22 @@ app.get('/health', (req: Request, res: Response): void => {
 
 // get task list
 app.get('/tasks', (req: Request, res: Response) => {
-  const tasks = getAllTasks();
+  const search = req.query.search as string | undefined;
+  const done = req.query.done as string | undefined;
+  const sort = req.query.sort as string | undefined;
+  
+  let tasks;
+
+  if (search) {
+    tasks = searchTasks(search);
+  } else if (done !== undefined) {
+    tasks = getTasksByDone(done === 'true');
+  } else if (sort === 'title') {
+    tasks = getTaskSortedByTitle();
+  } else {
+    tasks = getAllTasks();
+  }
+
   res.json(tasks);
 });
 
@@ -99,21 +125,14 @@ app.delete( '/tasks/:id', (req: Request, res: Response) => {
 
 // GET /stats - task statistics 
 app.get('/stats', (req: Request, res: Response) => {
-  const total = tasks.length;
-  const done = tasks.filter((t) => t.done).length;
-  const open = total - done;
+  const stats = getStats();
 
-  res.json({ total, done, open});
+  res.json(stats);
 });
 
 //POST /reset- reset to default tasks
 app.post('/reset', (req: Request, res: Response) => {
-  tasks = [
-      { id: 1, title: 'Learn Typescript', done: false },
-      { id: 2, title: 'Build CRUD API', done: false },
-      { id: 3, title: 'Submt assignment', done: false },
-  ];
-  nextId = 4;
+  const tasks = resetTasks();
   res.status(200).json({ message: 'Tasks reset to default', tasks})
 });  
 

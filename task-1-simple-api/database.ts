@@ -57,5 +57,39 @@ export function deleteTask(id: number) {
   return true;
 }  
 
+export function resetTasks() {
+  db.exec('DELETE FROM tasks');
+  const insert = db.prepare('INSERT INTO tasks (title, done) VALUES (?, ?)');
+  insert.run('Learn Typescript', 0);
+  insert.run('Build CRUD API', 0);
+  insert.run('Submit assignment', 0);
+  return getAllTasks();
+}
+// Extra: Search
+export function searchTasks(searchTerm: string) {
+  const stmt = db.prepare('SELECT * FROM tasks WHERE title LIKE ? ORDER BY id');
+  return stmt.all(`%${searchTerm}%`);
+}
+
+// Extra: Filter by done
+export function getTasksByDone(done: boolean) {
+  const doneValue = done ? 1 : 0;
+  const stmt = db.prepare('SELECT * FROM tasks WHERE done = ? ORDER BY id');
+  return stmt.all(doneValue);
+}
+
+// Extra: Sort alphabetically
+export function getTasksSortedByTitle() {
+  const stmt = db.prepare('SELECT * FROM tasks ORDER BY title');
+  return stmt.all();
+}
+
+// Extra: Stats using SQL COUNT()
+export function getStats() {
+  const total = (db.prepare('SELECT COUNT(*) as c FROM tasks').get() as any).c;
+  const done = (db.prepare('SELECT COUNT(*) as c FROM tasks WHERE done = 1').get() as any).c;
+  return { total, done, open: total - done };
+}
+
 export default db;
 
