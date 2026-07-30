@@ -4,3 +4,11 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml\
 tasks.db
+.env
+*.db
+*.db-journal
+*.swp
+*.swo
+.DS_Store
+dist/
+*.log

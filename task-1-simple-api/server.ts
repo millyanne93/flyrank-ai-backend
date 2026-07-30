@@ -12,7 +12,7 @@ import {
   getTasksByDone,
   getTasksSortedByTitle,
   getStats
-} from './database';
+} from './postgresRepository';
 
 const app = express();
 const PORT = 3000;
@@ -36,7 +36,7 @@ app.get('/health', (req: Request, res: Response): void => {
 });
 
 // get task list
-app.get('/tasks', (req: Request, res: Response) => {
+app.get('/tasks', async (req: Request, res: Response) => {
   const search = req.query.search as string | undefined;
   const done = req.query.done as string | undefined;
   const sort = req.query.sort as string | undefined;
@@ -44,22 +44,22 @@ app.get('/tasks', (req: Request, res: Response) => {
   let tasks;
 
   if (search) {
-    tasks = searchTasks(search);
+    tasks = await searchTasks(search);
   } else if (done !== undefined) {
-    tasks = getTasksByDone(done === 'true');
+    tasks = await getTasksByDone(done === 'true');
   } else if (sort === 'title') {
-    tasks = getTaskSortedByTitle();
+    tasks = await getTasksSortedByTitle();
   } else {
-    tasks = getAllTasks();
+    tasks = await getAllTasks();
   }
 
   res.json(tasks);
 });
 
 //get /task/:id
-app.get('/tasks/:id', (req: Request, res: Response) => {
+app.get('/tasks/:id', async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
-  const task = getTaskById(id);
+  const task = await getTaskById(id);
   
   if (!task) {
     return res.status(404).json({ error: `Task ${id} not found` });
@@ -68,22 +68,22 @@ app.get('/tasks/:id', (req: Request, res: Response) => {
   res.json(task);
 });
 //Post /task  create task
-app.post('/tasks', (req: Request, res: Response) => {
+app.post('/tasks', async (req: Request, res: Response) => {
   const { title } = req.body;
 
   if (!title || title.trim() === '') {
     return res.status(400).json({ error: 'Title is required and cannot be empty'});
   }
 
-  const newTask = createTask(title.trim());
+  const newTask = await createTask(title.trim());
 
   res.status(201).json(newTask);
 });
 
 //PUT /tasks/:id - update a task
-app.put('/tasks/:id', (req: Request, res: Response) => {
+app.put('/tasks/:id', async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
-  const task = getTaskById(id);
+  const task = await getTaskById(id);
 
   if (!task) {
     return res.status(404).json({ error: `Task ${id} not found` });
@@ -105,16 +105,16 @@ app.put('/tasks/:id', (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Done must be a boolean'});
     }
   }
-  const updated = updateTask(id, title !== undefined ? title.trim() : undefined, done);
+  const updated = await updateTask(id, title !== undefined ? title.trim() : undefined, done);
 
   res.json(updated);
 });
 
 // DELETE /tasks/:id 
-app.delete( '/tasks/:id', (req: Request, res: Response) => {
+app.delete( '/tasks/:id', async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
 
-  const deleted = deleteTask(id);
+  const deleted = await deleteTask(id);
 
   if (!deleted) {
     return res.status(404).json({ error: `Task ${id} not found` });
@@ -124,15 +124,15 @@ app.delete( '/tasks/:id', (req: Request, res: Response) => {
 });
 
 // GET /stats - task statistics 
-app.get('/stats', (req: Request, res: Response) => {
-  const stats = getStats();
+app.get('/stats', async (req: Request, res: Response) => {
+  const stats = await getStats();
 
   res.json(stats);
 });
 
 //POST /reset- reset to default tasks
-app.post('/reset', (req: Request, res: Response) => {
-  const tasks = resetTasks();
+app.post('/reset', async(req: Request, res: Response) => {
+  const tasks = await resetTasks();
   res.status(200).json({ message: 'Tasks reset to default', tasks})
 });  
 

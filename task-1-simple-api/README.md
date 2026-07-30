@@ -1,22 +1,28 @@
 # Task API — CRUD Backend
 
-RESTful API for managing a to-do list, built with Express + TypeScript, backed by a SQLite database.
+RESTful API for managing a to-do list, built with Express + TypeScript, backed by PostgreSQL running in Docker.
 
 ---
-
 ## Quick Start
 
+### Option 1: Run with Docker (Recommended)
+
 ```bash
+# Clone the repository
 git clone https://github.com/clear/flyrank-ai-backend.git
 cd flyrank-ai-backend/task-1-simple-api
+
+# Start the stack (PostgreSQL + Node.js app)
+docker compose up -d --build
+
+# Test the API
+curl http://localhost:3000/health
+curl http://localhost:3000/tasks
+Option 2: Run locally (without Docker)
+bash
 npm install
 npm run dev
-```
-
-Server runs at http://localhost:3000
-
-On first run, a `tasks.db` SQLite file is created automatically in the project root, with the `tasks` table created and seeded with three example tasks.
-
+Note: This will use SQLite (tasks.db) instead of PostgreSQL.
 ---
 
 ## Endpoints
@@ -37,9 +43,22 @@ On first run, a `tasks.db` SQLite file is created automatically in the project r
 | GET | /stats | Task statistics (via SQL `COUNT()`) |
 | POST | /reset | Reset to default tasks |
 
+### Docker Commands
+Command What It Does
+docker compose up -d    Start the stack in the background
+docker compose up -d --build    Rebuild images and start
+docker compose logs -f app  View app logs
+docker compose logs -f db   View database logs
+docker compose down Stop containers (keeps data)
+docker compose down -v  Stop containers and delete data
+docker compose restart  Restart all containers
+
 ### Example
 
 ```bash
+## Health check
+curl http://localhost:3000/health
+
 ## Create a task
 curl -X POST http://localhost:3000/tasks \
   -H "Content-Type: application/json" \
@@ -92,36 +111,54 @@ Interactive API docs available at:
 http://localhost:3000/docs
 
 <img width="1366" height="728" alt="2026-07-16" src="https://github.com/user-attachments/assets/92900158-bded-4786-be14-517de6f4f31b" />
-
----
-
 ## Database
 
-Data is now persisted in **SQLite** instead of an in-memory array — tasks survive server restarts.
+PostgreSQL (with Docker)
+Image: postgres:16
 
-**Why SQLite:** it requires no separate database server or installation, stores everything in a single file, and is ideal for a small project like this where the goal is to learn the fundamentals of persistence and SQL without the overhead of setting up Postgres/MySQL.
+Database: tasks
 
-**Where the database lives:** `tasks.db`, created automatically in the project root on first run. It is git-ignored (see `.gitignore`) since it's a generated file, not source code — anyone cloning this repo gets a fresh `tasks.db` created and seeded automatically the first time they run `npm run dev`.
+User: taskuser
 
-**Schema:**
+Password: taskpass (via .env)
 
-```sql
+Port: 5432
+
+Data Volume: pgdata (persists across restarts)
+
+Schema
+sql
 CREATE TABLE IF NOT EXISTS tasks (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
-  done BOOLEAN NOT NULL DEFAULT 0,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  done BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
 );
-```
+Why PostgreSQL + Docker?
+Data persists across container restarts
 
-Three example tasks are inserted automatically the first time the table is created, and only then — restarting the server does not duplicate them.
+Production-ready database
 
-**Example SQL query run manually via the SQLite CLI:**
+No manual installation required
 
-```sql
-sqlite3 tasks.db "SELECT * FROM tasks WHERE done = 1;"
-```
+Consistent development environment
+
+Easy to switch to other databases later
+
+Persistence Proof
+bash
+# Create a task
+curl -X POST http://localhost:3000/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"This will survive restart"}'
+
+# Restart containers
+docker compose restart
+
+# Task is still there 
+curl http://localhost:3000/tasks
+
 
 **Database viewer screenshot:**
 
@@ -129,26 +166,32 @@ sqlite3 tasks.db "SELECT * FROM tasks WHERE done = 1;"
 
 ---
 
-## Optional Extras Implemented
-
-- ✅ Search tasks by title (`GET /tasks?search=`) using SQL `LIKE`
-- ✅ Filter by completion status (`GET /tasks?done=`) using SQL `WHERE`
-- ✅ Alphabetical sorting (`GET /tasks?sort=title`)
-- ✅ Statistics endpoint (`GET /stats`) using SQL `COUNT()` instead of counting in JavaScript
-- ✅ Timestamps (`created_at`, `updated_at`) tracked for every task
-
----
-
 ## Tech Stack
 
 - Node.js + Express — Backend framework
 - TypeScript — Type safety
-- better-sqlite3 — SQLite database driver
+- PostgreSQL — Production database (via Docker)
+- Docker + Docker Compose — Containerization
 - Swagger UI — API documentation
 
 ## Dependencies
 
 ```bash
 npm install express swagger-ui-express better-sqlite3
-npm install -D typescript @types/express @types/swagger-ui-express @types/better-sqlite3 nodemon tsx
+npm install -D typescript @types/express @types/swagger-ui-express @types/pg nodemon tsx
+```
+## Switching Between Databases
+The API supports both PostgreSQL (Docker) and SQLite (local):
+
+Database    How to Use
+PostgreSQL  docker compose up -d
+SQLite  npm run dev (uses database.ts)
+The import in server.ts determines which database is used:
+
+```typescript
+// For PostgreSQL (Docker)
+import { ... } from './postgresRepository';
+
+// For SQLite (local)
+import { ... } from './database';
 ```
