@@ -1,0 +1,21 @@
+# Node modules (catch all)
+**/node_modules/
+
+# Environment variables (catch all)
+**/.env
+
+# Database files (catch all)
+**/*.db
+**/*.db-journal
+
+# Docker
+**/pgdata/
+
+# OS files
+.DS_Store
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
