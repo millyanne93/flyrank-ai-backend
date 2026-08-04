@@ -1,6 +1,8 @@
 import express, { Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import openapi from './openapi.json';
 import { verifyToken, AuthRequest } from './middleware.ts';
 
 dotenv.config();
@@ -15,6 +17,8 @@ const supabase = createClient(
       process.env.SUPABASE_URL!,
         process.env.SUPABASE_KEY!
 );
+
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapi));
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
@@ -93,5 +97,6 @@ app.post('/auth/logout', verifyToken, async (req: AuthRequest, res: Response) =>
 
 app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);
-            console.log(`Connected to Supabase`);
+      console.log(`Connected to Supabase`);
+      console.log(`Swagger UI: http://localhost:${PORT}/docs`);
 });

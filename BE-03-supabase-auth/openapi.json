@@ -1,14 +1,33 @@
 {
   "openapi": "3.0.0",
+
   "info": {
     "title": "Auth API",
     "version": "1.0.0",
     "description": "Secure API with Supabase authentication"
   },
+  "tags": [
+    {
+      "name": "System",
+      "description": "System monitoring endpoints"
+    },
+    {
+      "name": "Authentication",
+      "description": "User authentication endpoints"
+    },
+    {
+      "name": "Public",
+      "description": "Endpoints accessible without authentication"
+    },
+    {
+      "name": "Protected",
+      "description": "Endpoints requiring a valid JWT access token"
+    }
+  ],
   "servers": [
     {
       "url": "http://localhost:3000",
-      "description": "Development server"
+      "description": "Local development server"
     }
   ],
   "components": {
@@ -27,7 +46,7 @@
         "tags": ["System"],
         "responses": {
           "200": {
-            "description": "Server is healthy",
+            "description": "Health check succesful",
             "content": {
               "application/json": {
                 "schema": {
@@ -54,8 +73,8 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "email": { "type": "string", "example": "test@example.com" },
-                  "password": { "type": "string", "example": "SecurePass123" }
+                  "email": { "type": "string", "format": "email","example": "test@example.com" },
+                  "password": { "type": "string", "format": "password","example": "SecurePass123" }
                 },
                 "required": ["email", "password"]
               }
@@ -64,7 +83,7 @@
         },
         "responses": {
           "201": { "description": "User created successfully" },
-          "400": { "description": "Missing email or password" }
+          "400": { "description": "Invalid request" }
         }
       }
     },
@@ -79,8 +98,9 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "email": { "type": "string", "example": "test@example.com" },
-                  "password": { "type": "string", "example": "SecurePass123" }
+                  "email": { 
+                    "type": "string", "format": "email", "example": "test@example.com" },
+                  "password": { "type": "string", "format": "password", "example": "SecurePass123" }
                 },
                 "required": ["email", "password"]
               }
