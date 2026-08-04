@@ -63,7 +63,7 @@ app.get('/public/info',(req:Request, res: Response) => {
   res.json({ message: 'Welcome stranger! This info is public.' });
 });
 
-app.get('/protected/profile', (req: Request, res: Response) => {
+app.get('/protected/profile', async(req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -72,12 +72,26 @@ app.get('/protected/profile', (req: Request, res: Response) => {
   const token = authHeader.split(' ')[1];
   if (!token) {
     return res.status(401).json({ error: 'Access token required' });
-  }  
+  }
+  try {
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data.user) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    res.status(200).json({
+      id: data.user.id,
+      email: data.user.email,
+      created_at: data.user.created_at,
+      last_sign_in_at: data.user.last_sign_in_at,
+    });
+  } catch (err) {
+    console.error('Token verification error:', err);
+    return res.status(401).json({ error: 'Invalid or expired token' })
+  } 
 
-  res.status(200).json({ message: 'Token received!'});
 });  
 
 app.listen(PORT, () => {
-      console.log(`✅ Server running at http://localhost:${PORT}`);
-            console.log(`✅ Connected to Supabase`);
+      console.log(`Server running at http://localhost:${PORT}`);
+            console.log(`Connected to Supabase`);
 });
