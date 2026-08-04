@@ -59,6 +59,24 @@ app.post('/auth/login', async (req: Request, res: Response) => {
   });
 });
 
+app.get('/public/info',(req:Request, res: Response) => {
+  res.json({ message: 'Welcome stranger! This info is public.' });
+});
+
+app.get('/protected/profile', (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }  
+
+  res.status(200).json({ message: 'Token received!'});
+});  
+
 app.listen(PORT, () => {
       console.log(`✅ Server running at http://localhost:${PORT}`);
             console.log(`✅ Connected to Supabase`);
