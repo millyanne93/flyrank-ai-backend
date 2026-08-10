@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import * as cheerio from "cheerio";
 
 const TARGET_URL =
   "https://books.toscrape.com/catalogue/page-1.html";
@@ -58,12 +59,46 @@ async function getPage(): Promise<string> {
 
   return html;
 }
+function parseBooks(html: string) {
+  const $ = cheerio.load(html);
 
+  const books = $(".product_pod")
+    .map((_, element) => {
+      const title = $(element).find("h3 a").attr("title");
+      const price = $(element).find(".price_color").text().trim();
+      const availability = $(element)
+        .find(".availability")
+        .text()
+        .trim();
+
+      const rating = $(element)
+        .find(".star-rating")
+        .attr("class")
+        ?.split(" ")
+        .find((className) => className !== "star-rating");
+
+      const relativeUrl = $(element).find("h3 a").attr("href");
+
+      return {
+        title,
+        price,
+        availability,
+        rating,
+        url: relativeUrl,
+      };
+    })
+    .get();
+
+  return books;
+}
 async function main(): Promise<void> {
   try {
     const html = await getPage();
 
     console.log(`Response size: ${html.length} bytes`);
+    const books = parseBooks(html);
+    console.log(`Books found: ${books.length}`);
+    console.log(books.slice(0, 3));
   } catch (error) {
     console.error("Scraper failed:", error);
     process.exit(1);
