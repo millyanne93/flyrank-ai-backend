@@ -3,7 +3,7 @@ import * as cheerio from "cheerio";
 import { z } from "zod";
 
 // ============================================
-// Schema — raw Stage 3
+// Schemas
 // ============================================
 
 const RawBookSchema = z.object({
@@ -18,14 +18,13 @@ const RawBookSchema = z.object({
 });
 type RawBook = z.infer<typeof RawBookSchema>;
 
-// Clean schema (Stage 4)
 const BookSchema = z.object({
   title: z.string(),
   product_url: z.string().url(),
   price_gbp: z.number().nonnegative(),
   price_text: z.string(),
   availability_text: z.string(),
-  rating_text: z.string().nullable(), 
+  rating_text: z.string().nullable(),
   description: z.string().nullable(),
   source_page: z.string().url(),
   fetched_at: z.string().datetime(),
@@ -44,7 +43,37 @@ const MAX_PAGES = 3;
 const CATALOGUE_URL = "https://books.toscrape.com/catalogue/page-1.html";
 
 // ============================================
-// Stage 1: Fetch and Cache (shared by every request in the app)
+// Stage 5: Run Stats
+// ============================================
+
+interface RunStats {
+  startTime: number;
+  pagesFetched: number;
+  cacheHits: number;
+  failedPages: number;
+}
+
+const stats: RunStats = {
+  startTime: Date.now(),
+  pagesFetched: 0,
+  cacheHits: 0,
+  failedPages: 0,
+};
+
+// ============================================
+// Stage 5: Custom Fetch Error
+// ============================================
+
+class FetchError extends Error {
+  status?: number;
+  constructor(message: string, status?: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+// ============================================
+// Stage 1: Fetch and Cache
 // ============================================
 
 function getCacheFilePath(url: string): string {
@@ -73,13 +102,30 @@ async function fetchPage(url: string): Promise<string> {
     });
 
     if (response.status !== 200) {
-      throw new Error(`HTTP ${response.status} ${response.statusText}`);
+      throw new FetchError(
+        `HTTP ${response.status} ${response.statusText}`,
+        response.status
+      );
     }
 
+    stats.pagesFetched++;
     return await response.text();
   } finally {
     clearTimeout(timeout);
   }
+}
+
+// ============================================
+// Stage 5: Retry Logic
+// ============================================
+
+function isRetryable(error: unknown): boolean {
+  if (error instanceof FetchError) {
+    // Never retry 404 (Not Found) or 403 (Forbidden)
+    return error.status === undefined || error.status >= 500;
+  }
+  // AbortError from the timeout also counts as retryable
+  return error instanceof Error && error.name === "AbortError";
 }
 
 async function getPage(url: string): Promise<string> {
@@ -87,6 +133,7 @@ async function getPage(url: string): Promise<string> {
 
   if (existsSync(cacheFile)) {
     console.log(`CACHE HIT ${cacheFile}`);
+    stats.cacheHits++;
     return readFileSync(cacheFile, "utf-8");
   }
 
@@ -96,6 +143,26 @@ async function getPage(url: string): Promise<string> {
   console.log(`Cached HTML to ${cacheFile}`);
   await sleep(DELAY_MS);
   return html;
+}
+
+async function getPageWithRetry(url: string, maxAttempts = 2): Promise<string> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await getPage(url);
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxAttempts && isRetryable(error)) {
+        console.log(`  Retrying (attempt ${attempt + 1}/${maxAttempts}): ${url}`);
+        await sleep(1000);
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError;
 }
 
 // ============================================
@@ -162,7 +229,7 @@ async function discoverAllBookUrls(): Promise<Map<string, string>> {
 
 function parseBookDetails(html: string, url: string, sourcePage: string): RawBook {
   const $ = cheerio.load(html);
-  const product = $(".product_page"); 
+  const product = $(".product_page");
 
   const title = product.find("h1").first().text().trim();
   const priceText = product.find(".product_main .price_color").first().text().trim();
@@ -194,7 +261,7 @@ function parseBookDetails(html: string, url: string, sourcePage: string): RawBoo
     fetched_at: new Date().toISOString(),
   };
 
-  return RawBookSchema.parse(record); 
+  return RawBookSchema.parse(record);
 }
 
 async function extractAllBookDetails(
@@ -210,15 +277,24 @@ async function extractAllBookDetails(
     i++;
     console.log(`[${i}/${bookUrlToSourcePage.size}] ${url}`);
 
-    const html = await getPage(url);
-    const record = parseBookDetails(html, url, sourcePage);
-    rawRecords.push(record);
+    try {
+      const html = await getPageWithRetry(url);
+      const record = parseBookDetails(html, url, sourcePage);
+      rawRecords.push(record);
 
-    if (i === 1) {
-      console.log("\n  Sample record (first book):");
-      console.log(JSON.stringify(record, null, 2));
+      if (i === 1) {
+        console.log("\n  Sample record (first book):");
+        console.log(JSON.stringify(record, null, 2));
+      }
+    } catch (error) {
+      stats.failedPages++;
+      console.log(`  ❌ FAILED (skipping): ${url} — ${(error as Error).message}`);
     }
   }
+
+  console.log(`\n=== Stage 3 Summary ===`);
+  console.log(`successful_books=${rawRecords.length}`);
+  console.log(`failed_books=${stats.failedPages}`);
 
   return rawRecords;
 }
@@ -241,14 +317,16 @@ function transformToCleanBook(raw: RawBook): unknown {
     price_gbp: cleanPrice(raw.price_text),
     price_text: raw.price_text,
     availability_text: raw.availability_text,
-    rating_text: raw.rating_text, 
+    rating_text: raw.rating_text,
     description: raw.description,
     source_page: raw.source_page,
     fetched_at: raw.fetched_at,
   };
 }
 
-async function processAndStoreRecords(rawRecords: RawBook[]): Promise<void> {
+async function processAndStoreRecords(
+  rawRecords: RawBook[]
+): Promise<{ validCount: number; invalidCount: number }> {
   console.log("\n=== Stage 4: Cleaning and Validating Records ===\n");
 
   const validRecords: Book[] = [];
@@ -296,6 +374,40 @@ async function processAndStoreRecords(rawRecords: RawBook[]): Promise<void> {
   console.log(`\n=== Stage 4 Summary ===`);
   console.log(`Valid records: ${validRecords.length}`);
   console.log(`Invalid records: ${invalidRecords.length}`);
+
+  return { validCount: validRecords.length, invalidCount: invalidRecords.length };
+}
+
+// ============================================
+// Stage 5: Run Report
+// ============================================
+
+interface RunReport {
+  start_time: string;
+  duration_ms: number;
+  pages_fetched: number;
+  cache_hits: number;
+  valid_records: number;
+  invalid_records: number;
+  failed_pages: number;
+}
+
+function writeRunReport(validCount: number, invalidCount: number): void {
+  const report: RunReport = {
+    start_time: new Date(stats.startTime).toISOString(),
+    duration_ms: Date.now() - stats.startTime,
+    pages_fetched: stats.pagesFetched,
+    cache_hits: stats.cacheHits,
+    valid_records: validCount,
+    invalid_records: invalidCount,
+    failed_pages: stats.failedPages,
+  };
+
+  mkdirSync("output", { recursive: true });
+  writeFileSync("output/run-report.json", JSON.stringify(report, null, 2));
+
+  console.log("\n=== Run Report ===");
+  console.log(JSON.stringify(report, null, 2));
 }
 
 // ============================================
@@ -311,8 +423,16 @@ async function main(): Promise<void> {
       process.exit(1);
     }
 
+    // Stage 5 checkpoint: prove one bad page doesn't kill the run.
+    // Comment this line out once you've confirmed the checkpoint passes.
+    bookUrlToSourcePage.set(
+      "https://books.toscrape.com/catalogue/this-book-does-not-exist_9999/index.html",
+      CATALOGUE_URL
+    );
+
     const rawRecords = await extractAllBookDetails(bookUrlToSourcePage);
-    await processAndStoreRecords(rawRecords);
+    const { validCount, invalidCount } = await processAndStoreRecords(rawRecords);
+    writeRunReport(validCount, invalidCount);
 
     console.log("\n Scraper completed successfully!");
   } catch (error) {
