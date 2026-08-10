@@ -2,6 +2,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import * as cheerio from "cheerio";
 import { z } from "zod";
 
+// ============================================
+// Schema — raw Stage 3
+// ============================================
+
 const RawBookSchema = z.object({
   title: z.string(),
   product_url: z.string(),
@@ -13,6 +17,20 @@ const RawBookSchema = z.object({
   fetched_at: z.string(),
 });
 type RawBook = z.infer<typeof RawBookSchema>;
+
+// Clean schema (Stage 4)
+const BookSchema = z.object({
+  title: z.string(),
+  product_url: z.string().url(),
+  price_gbp: z.number().nonnegative(),
+  price_text: z.string(),
+  availability_text: z.string(),
+  rating_text: z.string().nullable(), 
+  description: z.string().nullable(),
+  source_page: z.string().url(),
+  fetched_at: z.string().datetime(),
+});
+type Book = z.infer<typeof BookSchema>;
 
 // ============================================
 // Configuration
@@ -73,7 +91,7 @@ async function getPage(url: string): Promise<string> {
   }
 
   const html = await fetchPage(url);
-  mkdirSync("cache", { recursive: true }); 
+  mkdirSync("cache", { recursive: true });
   writeFileSync(cacheFile, html, "utf-8");
   console.log(`Cached HTML to ${cacheFile}`);
   await sleep(DELAY_MS);
@@ -144,7 +162,7 @@ async function discoverAllBookUrls(): Promise<Map<string, string>> {
 
 function parseBookDetails(html: string, url: string, sourcePage: string): RawBook {
   const $ = cheerio.load(html);
-  const product = $(".product_page"); // scope to the product area, not the whole doc
+  const product = $(".product_page"); 
 
   const title = product.find("h1").first().text().trim();
   const priceText = product.find(".product_main .price_color").first().text().trim();
@@ -176,7 +194,7 @@ function parseBookDetails(html: string, url: string, sourcePage: string): RawBoo
     fetched_at: new Date().toISOString(),
   };
 
-  return RawBookSchema.parse(record); // fail loudly if a field is missing/wrong shape
+  return RawBookSchema.parse(record); 
 }
 
 async function extractAllBookDetails(
@@ -206,6 +224,81 @@ async function extractAllBookDetails(
 }
 
 // ============================================
+// Stage 4: Clean, Validate, Store
+// ============================================
+
+function cleanPrice(priceText: string): number | null {
+  if (!priceText) return null;
+  const cleaned = priceText.replace(/[^0-9.]/g, "");
+  const value = parseFloat(cleaned);
+  return isNaN(value) ? null : value;
+}
+
+function transformToCleanBook(raw: RawBook): unknown {
+  return {
+    title: raw.title,
+    product_url: raw.product_url,
+    price_gbp: cleanPrice(raw.price_text),
+    price_text: raw.price_text,
+    availability_text: raw.availability_text,
+    rating_text: raw.rating_text, 
+    description: raw.description,
+    source_page: raw.source_page,
+    fetched_at: raw.fetched_at,
+  };
+}
+
+async function processAndStoreRecords(rawRecords: RawBook[]): Promise<void> {
+  console.log("\n=== Stage 4: Cleaning and Validating Records ===\n");
+
+  const validRecords: Book[] = [];
+  const invalidRecords: any[] = [];
+
+  for (let i = 0; i < rawRecords.length; i++) {
+    const raw = rawRecords[i];
+    const transformed = transformToCleanBook(raw);
+
+    try {
+      const validated = BookSchema.parse(transformed);
+      validRecords.push(validated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        invalidRecords.push({
+          record_index: i,
+          url: raw.product_url,
+          errors: error.errors,
+        });
+      } else {
+        invalidRecords.push({
+          record_index: i,
+          url: raw.product_url,
+          error: String(error),
+        });
+      }
+      console.log(`  Validation failed for record ${i + 1}: ${raw.product_url}`);
+    }
+  }
+
+  mkdirSync("output", { recursive: true });
+
+  const booksPath = "output/books.json";
+  writeFileSync(booksPath, JSON.stringify(validRecords, null, 2));
+  console.log(` ${validRecords.length} valid records saved to ${booksPath}`);
+
+  const errorsPath = "output/errors.json";
+  writeFileSync(errorsPath, JSON.stringify(invalidRecords, null, 2));
+  if (invalidRecords.length > 0) {
+    console.log(` ${invalidRecords.length} invalid records saved to ${errorsPath}`);
+  } else {
+    console.log(` 0 invalid records — ${errorsPath} written as empty array`);
+  }
+
+  console.log(`\n=== Stage 4 Summary ===`);
+  console.log(`Valid records: ${validRecords.length}`);
+  console.log(`Invalid records: ${invalidRecords.length}`);
+}
+
+// ============================================
 // Main
 // ============================================
 
@@ -219,14 +312,9 @@ async function main(): Promise<void> {
     }
 
     const rawRecords = await extractAllBookDetails(bookUrlToSourcePage);
+    await processAndStoreRecords(rawRecords);
 
-    mkdirSync("output", { recursive: true });
-    const outputPath = "output/raw-records.json";
-    writeFileSync(outputPath, JSON.stringify(rawRecords, null, 2));
-
-    console.log(`\n=== Stage 3 Summary ===`);
-    console.log(`Raw records saved to ${outputPath}`);
-    console.log(`detail_pages=${rawRecords.length}`);
+    console.log("\n Scraper completed successfully!");
   } catch (error) {
     console.error("Scraper failed:", error);
     process.exit(1);
