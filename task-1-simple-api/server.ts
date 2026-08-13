@@ -1,4 +1,8 @@
+import "dotenv/config";
+
 import express, { Request, Response } from 'express';
+import { z } from "zod";
+import { ClassifyOutputSchema } from "./src/llm/schema";
 import swaggerUi from 'swagger-ui-express';
 import openapi from './openapi.json';
 import {
@@ -16,6 +20,9 @@ import {
 
 const app = express();
 const PORT = 3000;
+const ClassifyInputSchema = z.object({
+  title: z.string().min(1).max(200),
+});
 
 app.use(express.json());
 app.use('/docs', swaggerUi.serve,swaggerUi.setup(openapi));
@@ -78,6 +85,30 @@ app.post('/tasks', async (req: Request, res: Response) => {
   const newTask = await createTask(title.trim());
 
   res.status(201).json(newTask);
+});
+app.post('/tasks/:id/classify', async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  const task = await getTaskById(id);
+
+  if (!task) {
+    return res.status(404).json({ error: `Task ${id} not found` });
+  }
+
+  const parsed = ClassifyInputSchema.safeParse({ title: task.title });
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0].message });
+  }
+
+  if (process.env.LLM_STUB === '1') {
+    return res.json({
+      category: "work",
+      priority: "medium",
+      confidence: 0.5,
+      reason: "stub mode — no model called",
+    });
+  }
+
+  res.status(501).json({ error: 'not implemented yet' });
 });
 
 //PUT /tasks/:id - update a task
