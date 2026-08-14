@@ -3,6 +3,7 @@ import "dotenv/config";
 import express, { Request, Response } from 'express';
 import { z } from "zod";
 import { ClassifyOutputSchema } from "./src/llm/schema";
+import { classifyTask } from './src/llm/classify';
 import swaggerUi from 'swagger-ui-express';
 import openapi from './openapi.json';
 import {
@@ -108,7 +109,8 @@ app.post('/tasks/:id/classify', async (req: Request, res: Response) => {
     });
   }
 
-  res.status(501).json({ error: 'not implemented yet' });
+  const rawResult = await classifyTask(parsed.data.title);
+  res.json({ raw: rawResult });
 });
 
 //PUT /tasks/:id - update a task
