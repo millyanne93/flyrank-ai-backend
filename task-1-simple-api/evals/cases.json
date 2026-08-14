@@ -1,0 +1,48 @@
+[
+  {
+    "title": "Complete Q4 financial report by Friday",
+    "expected_category": "work",
+    "expected_priority": "high"
+  },
+  {
+    "title": "Call mom for her birthday",
+    "expected_category": "personal",
+    "expected_priority": "high"
+  },
+  {
+    "title": "Read chapter 5 of TypeScript handbook",
+    "expected_category": "learning",
+    "expected_priority": "medium"
+  },
+  {
+    "title": "Buy groceries for the week",
+    "expected_category": "errand",
+    "expected_priority": "medium"
+  },
+  {
+    "title": "Go for a 30-minute run",
+    "expected_category": "health",
+    "expected_priority": "medium"
+  },
+  {
+    "title": "Fix the kitchen sink",
+    "expected_category": "errand",
+    "expected_priority": "medium"
+  },
+  {
+    "title": "Team standup meeting at 10am",
+    "expected_category": "work",
+    "expected_priority": "medium"
+  },
+  {
+    "title": "Watch the new episode of The Bear",
+    "expected_category": "personal",
+    "expected_priority": "low"
+  },
+  {
+  "title": "asdf",
+  "expected_category": "other",
+  "expected_priority": "low"
+  }
+
+]
