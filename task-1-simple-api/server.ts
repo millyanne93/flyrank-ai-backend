@@ -109,8 +109,13 @@ app.post('/tasks/:id/classify', async (req: Request, res: Response) => {
     });
   }
 
-  const rawResult = await classifyTask(parsed.data.title);
-  res.json({ raw: rawResult });
+  try {
+    const result = await classifyTask(parsed.data.title, id);
+    res.json(result);
+  } catch (err: any) {
+    const status = err.status ?? 500;
+    res.status(status).json({ error: err.message });
+  }
 });
 
 //PUT /tasks/:id - update a task

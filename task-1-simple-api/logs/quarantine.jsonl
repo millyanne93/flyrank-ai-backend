@@ -1,0 +1,1 @@
+{"taskId":1,"title":"Learn Typescript","promptVersion":"v1","error":"ReferenceError: ClassifyOutputSchema is not defined","rawOutput":"{\n  \"category\": \"learning\",\n  \"priority\": \"medium\",\n  \"confidence\": 0.9,\n  \"reason\": \"It is a learning activity focused on acquiring new technical knowledge.\"\n}","timestamp":"2026-08-14T10:46:53.355Z"}
