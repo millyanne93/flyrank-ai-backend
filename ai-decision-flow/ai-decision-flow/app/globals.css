@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --border: 220 13% 91%;
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+/* React Flow needs an explicit height on its container */
+.reactflow-wrapper {
+  width: 100%;
+  height: calc(100vh - 56px);
+}
