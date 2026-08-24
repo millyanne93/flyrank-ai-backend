@@ -17,6 +17,7 @@ const makeReport = inngest.createFunction(
   {
     id: 'make-report',
     triggers: [{ event: 'report/requested' }],
+    retries: 2,
   },
   async ({ event, step }) => {
     const { id, topic } = event.data;
@@ -26,6 +27,9 @@ const makeReport = inngest.createFunction(
 
     // Step 2: Build the report
     const result = await step.run('build-report', () => {
+      if (topic === 'fail') {
+        throw new Error('The report oven is broken!');
+      }
       const reportContent = `Report on "${topic}" generated at ${new Date().toISOString()}`;
       return { result: reportContent };
     });
