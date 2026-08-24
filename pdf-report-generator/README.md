@@ -138,6 +138,7 @@ $ curl -s -X POST http://localhost:3000/reports -H "Content-Type: application/js
 
 ## Screenshot
 
+<img width="1366" height="728" alt="2026-08-24" src="https://github.com/user-attachments/assets/f3a69f5e-8a25-4f65-96ea-9852e0ef88e0" />
 
 
 ## Project structure
