@@ -12,9 +12,26 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// POST /reports — runs the whole pipeline and returns a link
 app.post('/reports', async (req, res) => {
   try {
+    const force = req.body?.force === true;
+
+    if (!force) {
+      const existing = db.prepare(`
+        SELECT * FROM reports
+        WHERE date(created_at) = date('now')
+        ORDER BY created_at DESC
+        LIMIT 1
+      `).get();
+
+      if (existing) {
+        return res.status(200).json({
+          id: existing.id,
+          file: `/reports/${existing.id}/file`
+        });
+      }
+    }
+
     const outputPath = `reports/${Date.now()}.pdf`;
     await generatePdf(outputPath);
 
