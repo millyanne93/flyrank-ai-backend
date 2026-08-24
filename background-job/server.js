@@ -1,7 +1,7 @@
 const express = require('express');
 const { serve } = require('inngest/express');
 const { inngest } = require('./inngest/client');
-const { sayHello, makeReport } = require('./inngest/functions');
+const { sayHello, makeReport, heartbeat } = require('./inngest/functions');
 const { reports } = require('./store');
 
 const app = express();
@@ -13,7 +13,7 @@ app.use(express.json());
 // Serve Inngest functions
 app.use('/api/inngest', serve({
   client: inngest,
-  functions: [sayHello, makeReport],
+  functions: [sayHello, makeReport, heartbeat],
 }));
 
 // Health check endpoint
