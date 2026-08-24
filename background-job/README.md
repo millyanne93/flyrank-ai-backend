@@ -125,6 +125,7 @@ never has to hold a connection open for slow work, which is what makes it resili
 ---
 
 ## Dashboard screenshot
+<img width="1366" height="728" alt="2026-08-24 (2)" src="https://github.com/user-attachments/assets/1be0286e-83ec-4778-bc63-d2cd0e192cb3" />
 
 
 
