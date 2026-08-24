@@ -12,7 +12,6 @@ async function generatePdf(outputPath) {
   const page = await browser.newPage();
   await page.setContent(html);
 
-  // make sure reports/ exists
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
   await page.pdf({
@@ -22,11 +21,7 @@ async function generatePdf(outputPath) {
   });
 
   await browser.close();
-  console.log(`✅ PDF saved to ${outputPath}`);
-}
-
-if (require.main === module) {
-  generatePdf('reports/test.pdf');
+  return outputPath;
 }
 
 module.exports = generatePdf;
