@@ -3,7 +3,7 @@ const db = require('./database');
 function getReportData() {
   // 1. Total orders and total revenue
   const totals = db.prepare(`
-    SELECT 
+    SELECT
       COUNT(*) as total_orders,
       SUM(amount) as total_revenue
     FROM orders
@@ -11,7 +11,7 @@ function getReportData() {
 
   // 2. Top 5 products by revenue
   const topProducts = db.prepare(`
-    SELECT 
+    SELECT
       product,
       COUNT(*) as order_count,
       SUM(amount) as revenue
@@ -23,7 +23,7 @@ function getReportData() {
 
   // 3. Orders per day for last 7 days
   const dailyOrders = db.prepare(`
-    SELECT 
+    SELECT
       created_at as date,
       COUNT(*) as orders
     FROM orders
@@ -32,11 +32,17 @@ function getReportData() {
     ORDER BY created_at DESC
   `).all();
 
+  // 4. All orders (needed for the long table in the PDF)
+  const allOrders = db.prepare(`
+    SELECT * FROM orders ORDER BY created_at DESC
+  `).all();
+
   return {
     total_orders: totals.total_orders,
     total_revenue: totals.total_revenue,
     top_products: topProducts,
-    daily_orders: dailyOrders
+    daily_orders: dailyOrders,
+    all_orders: allOrders
   };
 }
 
